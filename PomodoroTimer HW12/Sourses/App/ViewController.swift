@@ -15,7 +15,6 @@ class ViewController: UIViewController {
     private lazy var timerLabel: UILabel = {
         let timerLabel = UILabel()
         timerLabel.font = UIFont(name: "courier new", size: 70)
-        timerLabel.text = "00:00"
         timerLabel.textColor = UIColor.systemPink
         timerLabel.alpha = 0.8
         timerLabel.textAlignment = .center
@@ -31,6 +30,7 @@ class ViewController: UIViewController {
         playPauseButton.contentVerticalAlignment = .fill
         playPauseButton.contentHorizontalAlignment = .fill
         playPauseButton.imageView?.contentMode = .scaleAspectFit
+        playPauseButton.addTarget(self, action: #selector(ViewController.playPauseButtonTapped), for: .touchUpInside)
         return playPauseButton
     }()
 
@@ -41,6 +41,7 @@ class ViewController: UIViewController {
         view.backgroundColor = .black
         setupHierarchy()
         setupLayout()
+        timerLabel.text = timeString(time: TimeInterval(workingTimeSeconds))
     }
 
     // MARK: - Setup
@@ -63,6 +64,81 @@ class ViewController: UIViewController {
             $0.centerX.equalTo(timerLabel.snp.centerX)
             $0.size.equalTo(timerLabel).inset(15)
         }
+    }
+
+    // MARK: - Timer
+
+    var workingTimeSeconds = 25
+    var relaxTimeSeconds = 5
+    var isWorkingTime = true
+    var isTimerRunning = false
+    var timer = Timer()
+
+    func runTimer() {
+        isTimerRunning = true
+        timer = Timer.scheduledTimer(timeInterval: 1,
+                                     target: self,
+                                     selector: (#selector(ViewController.updateTimer)),
+                                     userInfo: nil,
+                                     repeats: true)
+    }
+
+    func startWorkingTimer() {
+        timerLabel.text = timeString(time: TimeInterval(workingTimeSeconds))
+        playPauseButton.tintColor = UIColor.systemPink
+        timerLabel.textColor = UIColor.systemPink
+
+        if workingTimeSeconds < 1 {
+            timer.invalidate()
+            isWorkingTime = false
+            isTimerRunning = false
+            relaxTimeSeconds = 5
+            runTimer()
+            return
+        }
+        workingTimeSeconds -= 1
+    }
+
+    func startRelaxingTimer() {
+        timerLabel.text = timeString(time: TimeInterval(relaxTimeSeconds))
+        playPauseButton.tintColor = UIColor.systemGreen
+        timerLabel.textColor = UIColor.systemGreen
+
+        if relaxTimeSeconds < 1 {
+            timer.invalidate()
+            isWorkingTime = true
+            isTimerRunning = false
+            workingTimeSeconds = 25
+            runTimer()
+            return
+        }
+        relaxTimeSeconds -= 1
+    }
+
+    @objc func updateTimer() {
+        if isWorkingTime {
+            startWorkingTimer()
+        } else {
+            startRelaxingTimer()
+        }
+    }
+
+    @objc private func playPauseButtonTapped() {
+        if isTimerRunning == false {
+            runTimer()
+            playPauseButton.setImage(UIImage(systemName: "pause"), for: .normal)
+            isTimerRunning = true
+        } else {
+            timer.invalidate()
+            playPauseButton.setImage(UIImage(systemName: "play"), for: .normal)
+            isTimerRunning = false
+        }
+    }
+
+    func timeString(time:TimeInterval) -> String {
+        let minutes = Int(time) / 60 % 60
+        let seconds = Int(time) % 60
+        return String(format:"%02i:%02i", minutes, seconds)
     }
 
 }
